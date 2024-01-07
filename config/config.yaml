@@ -8,6 +8,7 @@ monitors:
       name: mysql
       labels:
         team: infra
+        difficulty: easy 
     spec:
       url:  https://github.com/bitnami/charts/blob/main/bitnami/mysql/Chart.yaml
       version: 8.0.25

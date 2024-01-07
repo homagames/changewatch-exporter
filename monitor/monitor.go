@@ -13,16 +13,9 @@ type Monitor struct {
 	APIVersion string `yaml:"apiversion"`
 	Metadata   struct {
 		Name   string `yaml:"name"`
-		Labels struct {
-			Team string `yaml:"team"`
-		} `yaml:"labels"`
+		Labels map[string]any `yaml:"labels"`
 	} `yaml:"metadata"`
-	Spec struct {
-		URL     string `yaml:"url"`
-		Version string `yaml:"version"`
-		Format  string `yaml:"format"`
-		Key     string `yaml:"key"`
-	} `yaml:"spec"`
+	Spec map[string]any `yaml:"spec"`
 }
 
 // Load all monitors from a yaml object

@@ -1,0 +1,15 @@
+---
+loglevel: debug
+hello: you
+monitors:
+  - kind: FormatedRemoteFile
+    apiVersion: v1
+    metadata:
+      name: mysql
+      labels:
+        team: infra
+    spec:
+      url:  https://github.com/bitnami/charts/blob/main/bitnami/mysql/Chart.yaml
+      version: 8.0.25
+      format: yaml
+      key: version

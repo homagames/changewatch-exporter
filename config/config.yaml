@@ -1,0 +1,44 @@
+---
+loglevel: debug
+mode: daemon
+prometheus:
+  path: /metrics
+  port: 9999
+monitors:
+  - kind: FormatedRemoteFile
+    apiVersion: v1
+    metadata:
+      name: mysql
+    spec:
+      url:  https://raw.githubusercontent.com/bitnami/charts/main/bitnami/mysql/Chart.yaml
+      version: 8.0.25
+      # version: 9.16.1
+      format: yaml
+      key: version
+  - kind: FormatedRemoteFile
+    apiVersion: v1
+    metadata:
+      name: redis
+    spec:
+      url:  https://raw.githubusercontent.com/bitnami/charts/main/bitnami/redis/Chart.yaml
+      version: 18.6.3
+      # version: 9.16.1
+      format: yaml
+      key: version
+  - kind: GithubRelease
+    apiVersion: v1
+    metadata:
+      name: helm
+    spec:
+      repo:  helm
+      org: helm
+      version: v3.13.2
+  - kind: GithubRelease
+    apiVersion: v1
+    metadata:
+      name: github_cli
+    spec:
+      repo:  cli
+      org: cli
+      version: v2.40.0
+

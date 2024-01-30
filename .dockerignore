@@ -1,0 +1,5 @@
+.github
+./getstarted
+Dockerfile
+*.md
+*.example.yaml

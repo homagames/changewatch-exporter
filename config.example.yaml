@@ -1,0 +1,26 @@
+---
+# Prometheus config to export metric to http://localhost:<prometheus.port><prometheus.path>
+prometheus:
+  path: /metrics
+  port: 9999
+monitors:
+  # Watch for new version of the Mysql helm chart from Bitnami
+  - kind: FormatedRemoteFile
+    apiVersion: v1
+    metadata:
+      name: mysql
+    spec:
+      url:  https://raw.githubusercontent.com/bitnami/charts/main/bitnami/mysql/Chart.yaml
+      version: 8.0.25
+      format: yaml
+      key: version
+  # Watch for new release of the Helm binaries
+  - kind: GithubRelease
+    apiVersion: v1
+    metadata:
+      name: helm
+    spec:
+      repo:  helm
+      org: helm
+      version: v3.13.2
+

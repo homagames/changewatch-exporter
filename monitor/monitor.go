@@ -19,8 +19,8 @@ import (
 // Define prometheus metrics
 var (
 	itemVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "change",
-		Name:      "processed_item",
+		Namespace: "changewatch",
+		Name:      "monitor_item",
 		Help:      "Indicate if a change has been processed",
 	},
 		[]string{"name", "kind", "version", "remote_version", "delta"},
@@ -138,7 +138,7 @@ func (m *Monitor) ComputeVersion(remote_version string) error {
 	item := itemVec.WithLabelValues(m.Metadata.Name, m.Kind, m.Spec["version"].(string), remote_version, delta)
 	item.Set(change)
 
-	logger.Info("Processed item", "name", m.Metadata.Name, "change", change)
+	logger.Info("Monitor item", "name", m.Metadata.Name, "change", change)
 
 	return nil
 }

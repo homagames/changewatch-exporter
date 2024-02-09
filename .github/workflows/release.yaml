@@ -161,8 +161,7 @@ jobs:
     - name: Get next tag version
       id: get_tag
       run: |
-       ACTUAL_VERSION=$(cat .gitmoji-changelogrc | jq '.project.version' | tr -d '"')
-       # Or use git describe --tags --abbrev=0)
+       ACTUAL_VERSION=$(git describe --tags --abbrev=0)
        if [[ ${{ github.event.inputs.type }} == "patch" ]]
        then
           echo "patch release ..."

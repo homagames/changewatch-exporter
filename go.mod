@@ -9,10 +9,6 @@ require (
 	github.com/google/go-github/v58 v58.0.1-0.20240111193443-e9f52699f5e5 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/homagames/changewatch-exporter/command v0.0.0-00010101000000-000000000000 // indirect
-	github.com/homagames/changewatch-exporter/logger v0.0.0-00010101000000-000000000000 // indirect
-	github.com/homagames/changewatch-exporter/monitor v0.0.0-00010101000000-000000000000 // indirect
-	github.com/homagames/changewatch-exporter/utils v0.0.0-00010101000000-000000000000 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -39,11 +35,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/homagames/changewatch-exporter/command => ./command
-
-replace github.com/homagames/changewatch-exporter/monitor => ./monitor
-
-replace github.com/homagames/changewatch-exporter/logger => ./logger
-
-replace github.com/homagames/changewatch-exporter/utils => ./utils

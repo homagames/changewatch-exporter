@@ -1,0 +1,104 @@
+name: lint-test-tag
+on:
+  pull_request:
+    branches:
+      - "*"
+  workflow_dispatch:
+    branches:
+      - master
+    inputs:
+      type:
+        type: choice
+        description: "Release type"
+        options:
+          - major
+          - minor
+          - patch
+defaults:
+  run:
+    shell: bash
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        cache: false
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: v1.54
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        cache: false
+    - name: Go Test
+      run: go test -v ./...
+  tag:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    needs: 
+     - lint
+     - test
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: compute next tag version
+      id: compute_tag
+      run: |
+       ACTUAL_VERSION=$(git describe --tags --abbrev=0)
+       echo "Actual version : $ACTUAL_VERSION"
+       ACTUAL_VERSION=${ACTUAL_VERSION//v}
+       echo "New actual version : $ACTUAL_VERSION"
+       if [[ ${{ github.event.inputs.type }} == "patch" ]]
+       then
+          echo "patch release ..."
+          PATCH=$(echo $ACTUAL_VERSION | cut -d. -f3)
+          MAJOR_AND_MINOR=$(echo $ACTUAL_VERSION | cut -d. -f1,2)
+          VERSION_TO_RELEASE=$(printf "%s.%d" $MAJOR_AND_MINOR $(($PATCH + 1)))
+        elif [[ ${{ github.event.inputs.type }} == "minor" ]]
+        then
+          echo "minor release ..."
+          MAJOR=$(echo $ACTUAL_VERSION | cut -d. -f1)
+          MINOR=$(echo $ACTUAL_VERSION | cut -d. -f2)
+          VERSION_TO_RELEASE=$(printf "%d.%d.0" $MAJOR $(($MINOR + 1))) ;
+        elif [[ ${{ github.event.inputs.type }} == "major" ]]
+        then
+          echo "major release ..."
+          MAJOR=$(echo $ACTUAL_VERSION | cut -d. -f1)
+          VERSION_TO_RELEASE=$(printf "%d.0.0" $(($MAJOR + 1))) ;
+        else
+            exit 1
+        fi
+        echo "tag=$VERSION_TO_RELEASE" >> "$GITHUB_OUTPUT"
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - name: Install gitmoji
+      run: |
+        npm install -g gitmoji-changelog
+    - name: Generate changelog & tagging
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "<>"
+        VERSION_TO_RELEASE=${{ steps.compute_tag.outputs.tag }}
+        echo "VERSION TO RELEASE : $VERSION_TO_RELEASE"
+        GITMOJI=$(jq '.project.version = $newTag' --arg newTag "${VERSION_TO_RELEASE}" .gitmoji-changelogrc)
+        echo $GITMOJI > .gitmoji-changelogrc
+        gitmoji-changelog --preset generic
+        git add .gitmoji-changelogrc CHANGELOG.md
+        git commit --no-verify -m ":bookmark: bumped to version v$VERSION_TO_RELEASE"
+        git tag -a "v${VERSION_TO_RELEASE}" -m "v${VERSION_TO_RELEASE}"
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.CHANGEWATCH_TOKEN }}
+        branch: master

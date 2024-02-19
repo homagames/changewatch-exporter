@@ -1,19 +1,9 @@
 name: release
+
 on:
   push:
-    branches:
-      - "*"
-  workflow_dispatch:
-    branches:
-      - master
-    inputs:
-      type:
-        type: choice
-        description: "Release type"
-        options:
-          - major
-          - minor
-          - patch
+    tags:
+      - "v*.*.*"
 defaults:
   run:
     shell: bash
@@ -24,34 +14,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
-        cache: false
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: v1.54
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
-        cache: false
-    - name: Go Test
-      run: go test -v ./...
   build:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-    needs: 
-      - test
-      - lint
+    if: startsWith(github.event.ref, 'refs/tags/v')
     outputs:
       changewatch-exporter-arm64-darwin_sha256: ${{ steps.output-sha256sum.outputs.changewatch-exporter-arm64-darwin_sha256 }}
       changewatch-exporter-amd64-linux_sha256: ${{ steps.output-sha256sum.outputs.changewatch-exporter-amd64-linux_sha256 }}
@@ -96,7 +61,7 @@ jobs:
         echo "changewatch-exporter-amd64-windows_sha256=$(sha256sum ./bin/changewatch-exporter-amd64-windows.exe | cut -f1 -d' ')" >> "$GITHUB_OUTPUT"
   container:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
+    if: startsWith(github.event.ref, 'refs/tags/v')
     outputs:
       container_sha256: ${{ steps.build_and_push.outputs.digest }}
     needs: 
@@ -149,64 +114,22 @@ jobs:
           platforms: linux/amd64,linux/arm64
   release:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-    needs: 
-     - container
-     - build
-     - get_tag
+    if: startsWith(github.event.ref, 'refs/tags/v')
+    needs:
+      - build
+      - container
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Get next tag version
+    - name: Get tag version
       id: get_tag
-      run: |
-       ACTUAL_VERSION=$(git describe --tags --abbrev=0)
-       if [[ ${{ github.event.inputs.type }} == "patch" ]]
-       then
-          echo "patch release ..."
-          PATCH=$(echo $ACTUAL_VERSION | cut -d. -f3)
-          MAJOR_AND_MINOR=$(echo $ACTUAL_VERSION | cut -d. -f1,2)
-          VERSION_TO_RELEASE=$(printf "%s.%d" $MAJOR_AND_MINOR $(($PATCH + 1)))
-        elif [[ ${{ github.event.inputs.type }} == "minor" ]]
-        then
-          echo "minor release ..."
-          MAJOR=$(echo $ACTUAL_VERSION | cut -d. -f1)
-          MINOR=$(echo $ACTUAL_VERSION | cut -d. -f2)
-          VERSION_TO_RELEASE=$(printf "%d.%d.0" $MAJOR $(($MINOR + 1))) ;
-        elif [[ ${{ github.event.inputs.type }} == "major" ]]
-        then
-          echo "major release ..."
-          MAJOR=$(echo $ACTUAL_VERSION | cut -d. -f1)
-          VERSION_TO_RELEASE=$(printf "%d.0.0" $(($MAJOR + 1))) ;
-        else
-            exit 1
-        fi
-        echo "tag=$VERSION_TO_RELEASE" >> "$GITHUB_OUTPUT"
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 18
-    - name: Install gitmoji
-      run: |
-        npm install -g gitmoji-changelog
-    - name: Generate changelog & tagging
-      run: |
-        git config user.name "GitHub Actions Bot"
-        git config user.email "<>"
-        VERSION_TO_RELEASE= ${{ steps.get_tag.outputs.tag }}
-        GITMOJI=$(jq '.project.version = $newTag' --arg newTag "${VERSION_TO_RELEASE//v}" .gitmoji-changelogrc)
-        echo $GITMOJI > .gitmoji-changelogrc
-        gitmoji-changelog --preset generic
-        git add .gitmoji-changelogrc CHANGELOG.md
-        git commit --no-verify -m ":bookmark: bumped to version $VERSION_TO_RELEASE"
-        git tag -a "${VERSION_TO_RELEASE}" -m "${VERSION_TO_RELEASE}"
-        git push origin HEAD:master --follow-tags
+      run: echo ::set-output name=tag::${GITHUB_REF/refs\/tags\//}
     - name: Retrieve the build artifacts
       uses: actions/download-artifact@v2
       with:
         name: changewatch-exporter
         path: ./bin
     - name: Release
+      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
         body: | 

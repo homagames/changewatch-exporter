@@ -55,9 +55,7 @@ jobs:
       id: compute_tag
       run: |
        ACTUAL_VERSION=$(git describe --tags --abbrev=0)
-       echo "Actual version : $ACTUAL_VERSION"
        ACTUAL_VERSION=${ACTUAL_VERSION//v}
-       echo "New actual version : $ACTUAL_VERSION"
        if [[ ${{ github.event.inputs.type }} == "patch" ]]
        then
           echo "patch release ..."
@@ -100,5 +98,5 @@ jobs:
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
-        github_token: ${{ secrets.CHANGEWATCH_TOKEN }}
+        github_token: ${{ secrets.GH_TOKEN }}
         branch: master

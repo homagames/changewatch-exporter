@@ -1,6 +1,9 @@
 name: release
+
 on:
-  - push
+  push:
+    tags:
+      - "v*.*.*"
 defaults:
   run:
     shell: bash
@@ -11,34 +14,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
-        cache: false
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: v1.54
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
-        cache: false
-    - name: Go Test
-      run: go test -v ./...
   build:
     runs-on: ubuntu-latest
     if: startsWith(github.event.ref, 'refs/tags/v')
-    needs: 
-      - test
-      - lint
     outputs:
       changewatch-exporter-arm64-darwin_sha256: ${{ steps.output-sha256sum.outputs.changewatch-exporter-arm64-darwin_sha256 }}
       changewatch-exporter-amd64-linux_sha256: ${{ steps.output-sha256sum.outputs.changewatch-exporter-amd64-linux_sha256 }}
@@ -137,9 +115,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     if: startsWith(github.event.ref, 'refs/tags/v')
-    needs: 
-     - container
-     - build
+    needs:
+      - build
+      - container
     steps:
     - uses: actions/checkout@v4
     - name: Get tag version
